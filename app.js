@@ -11,7 +11,8 @@ mongoose.connect("mongodb://localhost:27017/COFTTECH", error => {
     console.log(error);
 });
 
-let servicesRouter = require('./app_server/routes/services');
+let servicesRouter = require('./app_server/routes/ServicesRouter');
+let quotesRouter = require('./app_server/routes/QuotesRouter');
 
 let app = express();
 
@@ -22,6 +23,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use("/services", servicesRouter);
+app.use("/quotes", quotesRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
