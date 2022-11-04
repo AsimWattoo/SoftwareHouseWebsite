@@ -20,11 +20,17 @@ router.post("/create", (req, res, next) => {
             res.end();
         })
         .catch(error => {
-            res.writeHead(404, error);
+            res.writeHead(404, "Creation Failed");
+            res.write(error);
             console.log(error);
             res.end();
         });
 
+    }).catch(error => {
+        res.writeHead(404, "Creation Failed");
+        res.write(error);
+        console.log(error);
+        res.end();
     });
 });
 
