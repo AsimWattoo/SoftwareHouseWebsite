@@ -2,6 +2,7 @@ let express = require('express');
 let router = express.Router();
 
 let serviceModel = require("../models/Service");
+let purchaseModel = require('../models/Purchase');
 
 //Route to create the service
 router.post("/create", (req, res, next) => {
@@ -59,6 +60,107 @@ router.delete("/delete/:id", (req, res, next) => {
        res.write(error);
        res.end();
    });
+});
+
+// Route to view a specific service
+router.get("/:id", (req, res) => {
+   serviceModel.findOne({_id: req.params.id}).then(result => {
+       res.writeHead(200);
+       res.write(JSON.stringify(result));
+       res.end();
+   }).catch(error => {
+       console.log(error);
+       res.writeHead(404, "Not Found");
+       res.write(error);
+       res.end();
+   });
+});
+
+//Route to view all the services
+router.get("/", (req, res) => {
+   serviceModel.find({}).then(result => {
+       res.writeHead(200);
+       res.write(JSON.stringify(result));
+       res.end();
+   }).catch(error => {
+       console.log(error);
+       res.writeHead(404, "Not Found");
+       res.write(error);
+       res.end();
+   });
+});
+
+//Route to purchase a service
+router.post("/:sid/buy", async (req, res) => {
+    let service = await serviceModel.findOne({_id: req.params.sid});
+    let error = message => {
+        res.writeHead(404, message);
+        res.end();
+    }
+
+    if(service == null)
+    {
+        error("Service not found");
+        return;
+    }
+
+    let purchases = await purchaseModel.find({}).sort({_id: -1});
+    let id = 0;
+
+    if(purchases.length > 0)
+        id = purchases[0]._id + 1;
+
+    req.body["_id"] = id;
+    req.body["sid"] = req.params.sid;
+    req.body["Status"] = 'InProgress';
+    purchaseModel.create(req.body).then(result => {
+        res.writeHead(201, "Resource Created Successfully");
+        res.write(JSON.stringify({"URL": `http://127.0.0.1/service/purchased/${id}`}));
+        res.end();
+    }).catch(err => {
+        error(err);
+    })
+});
+
+//Route to view a purchased service
+router.get("/purchased/:id", (req, res) => {
+    purchaseModel.findOne({_id: req.params.id}).then(result => {
+        res.writeHead(200);
+        res.write(JSON.stringify(result));
+        res.end();
+    }).catch(error => {
+        console.log(error);
+        res.writeHead(404, "Not Found");
+        res.write(error);
+        res.end();
+    });
+});
+
+//Route to view purchased services for a user
+router.get("/user/:uid", (req, res) => {
+    purchaseModel.find({uid: req.params.uid}).then(result => {
+        res.writeHead(200);
+        res.write(JSON.stringify(result));
+        res.end();
+    }).catch(error => {
+        console.log(error);
+        res.writeHead(404, "Not Found");
+        res.write(error);
+        res.end();
+    });
+});
+
+//Route to cancel a purcahse
+router.put("/purchased/cancel/:id", (req, res) => {
+    purchaseModel.findOneAndUpdate({_id: req.params.id}, {$set: {"Status": "Cancelled"}}).then(result => {
+        res.writeHead(200, "Cancelled successfully");
+        res.end();
+    }).catch(error => {
+        console.log(error);
+        res.writeHead(404, "Not Found");
+        res.write(error);
+        res.end();
+    });
 });
 
 module.exports = router;
