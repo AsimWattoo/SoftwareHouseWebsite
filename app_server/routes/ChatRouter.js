@@ -109,19 +109,30 @@ router.put('/room/:rid/join/:id',async function(req, res, next) {
 })
 
 //Send Chat Message
-router.put('/message/send/:sid/:rid',async function(req, res, next) {
-    var room = await roomModel.findOneAndUpdate({ _id: req.params.id }, { $push: {members_id:id} });
+router.post('/message/send/:sid/:rid',async function(req, res, next) {
+    var room = await messageModel.create({ _id: req.params.id }, { $push: {members_id:id} });
 
 })
 
 //Send Chat Room Message
-router.put('/room/:id/message/',async function(req, res, next) {})
+router.post('/room/:id/message/',async function(req, res, next) {})
 
 //View Chat Message
-router.put('/messages/:sid/:rid',async function(req, res, next) {})
+router.get('/messages/:sid/:rid',async function(req, res, next) {})
 
 //View Chat Room Message
-router.put('/room/:cid/message',async function(req, res, next) {})
+router.get('/room/:cid/message',async function(req, res, next) {
+    var message_list = await roomModel.findOne({_id:req.params.cid}).populate("Conversation").aggregate([{$project:{c_id:1}}]);
+    if (message_list == null) {
+        res.writeHead(404,"Message Not Found");
+        res.end();
+    }
+    else{
+        res.writeHead(200);
+        res.write(JSON.stringify(message_list));
+        res.end();
+    }
+})
 
 //Delete Chat Message
 router.put('/messages/:sid/:rid/:mid',async function(req, res, next) {})
