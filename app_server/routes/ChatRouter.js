@@ -26,6 +26,7 @@ router.post('/room', async function(req, res, next) {
 });
 //Delete chatroom
 router.delete('/room/:id', function(req, res, next) {
+    
 });
 //Edit chatroom
 router.put('/room/:id', function(req, res, next) {});
