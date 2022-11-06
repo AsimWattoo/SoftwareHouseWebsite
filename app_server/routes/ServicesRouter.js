@@ -390,7 +390,8 @@ router.get("/sale/:sid", (req, res) => {
 
 //View Package Subscription
 router.get('/package/:id/subscriptions', function(req, res, next) {
-
+  let id = req.params.id;
+  
 });
 //View Subscription Status
 router.get('/subscription/:id', function(req, res, next) {
