@@ -3,6 +3,7 @@ var Schema = mongoose.Schema;
 
 var RoomSchema = new Schema({
     _id :{type: Number, required: true},
+    cid: {type: Number, ref: 'Conversation'},
     profile_pic: {data: Buffer, contentType: String},
     name: {type: String, required: true},
     description:{type: String, required: true},

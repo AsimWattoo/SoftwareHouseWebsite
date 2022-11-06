@@ -108,7 +108,7 @@ router.put('/room/:rid/join/:id',async function(req, res, next) {
 
 //Send Chat Message
 router.put('/message/send/:sid/:rid',async function(req, res, next) {
-    var room = await roomModel.findOneAndUpdate({ _id: req.params.rid }, { $push: {members_id:sid} });
+    var room = await roomModel.findOneAndUpdate({ _id: req.params.id }, { $push: {members_id:id} });
 
 })
 
