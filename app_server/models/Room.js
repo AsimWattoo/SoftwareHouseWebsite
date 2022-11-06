@@ -11,6 +11,11 @@ var RoomSchema = new Schema({
     ],
     CreationDate:{type: Date, required: true},
     admin_id:{type: Number, required: true,ref:'User'},
+    Settings: {
+        chatroomType: String,
+        OnlyAdminsAllowed: Boolean
+    }
+    
 });
 
 module.exports = mongoose.model('Room', RoomSchema);
