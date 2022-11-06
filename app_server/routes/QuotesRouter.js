@@ -5,6 +5,7 @@ let requestModel = require("../models/QuoteRequest");
 let quoteModel = require("../models/Quote");
 
 //Route to create a quote request
+// /quotes/request
 router.post("/request", (req, res, next) => {
   requestModel
     .find({})
