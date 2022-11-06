@@ -386,4 +386,31 @@ router.get("/sale/:sid", (req, res) => {
     });
 });
 
+/* HAZIQ */
+
+//View Package Subscription
+router.get('/package/:id/subscriptions', function(req, res, next) {
+
+});
+//View Subscription Status
+router.get('/subscription/:id', function(req, res, next) {
+
+});
+//Accept Service Request
+router.put('/request/:id/accept', function(req, res, next) {});
+//Reject Service Request
+router.put('/request/:id/reject', function(req, res, next) {});
+//View Service Requests 
+router.get('/requests', function(req, res, next) {});
+//View a Service Request
+router.get('/requests/:id', function(req, res, next) {});
+//Add a User
+router.post('/user/add', function(req, res, next) {});
+//Remove a User
+router.delete('/user/remove/:id', function(req, res, next) {});
+//Add an Admin
+router.post('/admin/add', function(req, res, next) {});
+//Remove an Admin
+router.delete('/admin/remove/:id', function(req, res, next) {});
+
 module.exports = router;
