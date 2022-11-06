@@ -4,6 +4,7 @@ let router = express.Router();
 let serviceModel = require("../models/Service");
 let purchaseModel = require("../models/Purchase");
 let packageModel = require("../models/Packages");
+let PurchasepackageModel = require("../models/Purchasepackage");
 
 //Route to create the service
 router.post("/create", (req, res, next) => {
@@ -277,6 +278,110 @@ router.delete("/package/del/:id", (req, res) => {
       console.log(err);
       res.writeHead(404, "Not Found");
       res.write(err);
+      res.end();
+    });
+});
+
+//Route to subscribe a package
+router.post("/package/:pid/subscribe", async (req, res) => {
+  let package = await packageModel.findOne({ _id: req.params.pid });
+  let error = (message) => {
+    res.writeHead(404, message);
+    res.end();
+  };
+
+  if (package == null) {
+    error("package not found");
+    return;
+  }
+
+  let purchases = await PurchasepackageModel.find({}).sort({ _id: -1 });
+  let id = 0;
+
+  if (purchases.length > 0) id = purchases[0]._id + 1;
+
+  req.body["_id"] = id;
+  req.body["pid"] = req.params.pid;
+  req.body["Status"] = "InProgress";
+  PurchasepackageModel.create(req.body)
+    .then((result) => {
+      res.writeHead(201, "Resource Created Successfully");
+      res.write(
+        JSON.stringify({
+          URL: `http://127.0.0.1/service/package/purchased/${id}`,
+        })
+      );
+      res.end();
+    })
+    .catch((err) => {
+      error(err);
+    });
+});
+
+//Route to cancel a subscribepackage
+router.put("/package/unsubscribe/:id", (req, res) => {
+  PurchasepackageModel.findOneAndUpdate(
+    { _id: req.params.id },
+    { $set: { Status: "Unsubscribed" } }
+  )
+    .then((result) => {
+      res.writeHead(200, "Unsubscribed Successfully");
+      res.end();
+    })
+    .catch((error) => {
+      console.log(error);
+      res.writeHead(404, "Not Found");
+      res.write(error);
+      res.end();
+    });
+});
+
+//Route to view all the subscribe packages
+router.get("/package/subscribe/all", (req, res) => {
+  PurchasepackageModel.find({})
+    .then((result) => {
+      res.writeHead(200);
+      res.write(JSON.stringify(result));
+      res.end();
+    })
+    .catch((error) => {
+      console.log(error);
+      res.writeHead(404, "Not Found");
+      res.write(error);
+      res.end();
+    });
+});
+
+//Route to View All the sales for Services
+router.get("/sale/all", (req, res) => {
+  purchaseModel
+    .find({})
+    .then((result) => {
+      res.writeHead(200);
+      res.write(JSON.stringify(result));
+      res.end();
+    })
+    .catch((error) => {
+      console.log(error);
+      res.writeHead(404, "Not Found");
+      res.write(error);
+      res.end();
+    });
+});
+
+//Route to View All the sales for specific Services
+router.get("/sale/:sid", (req, res) => {
+  purchaseModel
+    .find({ _id: req.params.sid })
+    .then((result) => {
+      res.writeHead(200);
+      res.write(JSON.stringify(result));
+      res.end();
+    })
+    .catch((error) => {
+      console.log(error);
+      res.writeHead(404, "Not Found");
+      res.write(error);
       res.end();
     });
 });
