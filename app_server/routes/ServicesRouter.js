@@ -91,7 +91,6 @@ router.get("/:id", (req, res) => {
     .catch((error) => {
       console.log(error);
       res.writeHead(404, "Not Found");
-      res.write(error);
       res.end();
     });
 });
@@ -494,7 +493,7 @@ router.delete('/user/remove/:id', function(req, res, next) {
       res.end();
   }).catch((err)=>{
       res.writeHead(404,"User Deletion Failed!");
-      res.end();
+      res.end(); 
   });
 });
 //Add an Admin
