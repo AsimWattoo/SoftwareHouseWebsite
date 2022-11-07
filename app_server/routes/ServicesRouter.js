@@ -115,48 +115,53 @@ router.get("/", async (req, res) => {
 
 //Route to purchase a service
 router.post("/:sid/buy", async (req, res) => {
-  let service = await serviceModel.findOne({ _id: req.params.sid });
-  let error = (message) => {
-    res.writeHead(404, message);
-    res.end();
-  };
 
-  if (service == null) {
-    error("Service not found");
-    return;
-  }
+    let user = await userModel.findOne({_id: req.body.uid});
 
-  let purchases = await purchaseModel.find({}).sort({ _id: -1 });
-  let id = 0;
+    if(user == null){
+        res.writeHead(400, "User not found");
+        res.end();
+        return;
+    }
 
-  if (purchases.length > 0) id = purchases[0]._id + 1;
+    let service = await serviceModel.findOne({ _id: req.params.sid });
+    let error = (message) => {res.writeHead(404, message);res.end();
+    };
 
-  req.body["_id"] = id;
-  req.body["sid"] = req.params.sid;
-  req.body["Status"] = "InProgress";
+    if (service == null) {error("Service not found");return;
+    }
+
+    let purchases = await purchaseModel.find({}).sort({ _id: -1 });
+    let id = 0;
+
+    if (purchases.length > 0) id = purchases[0]._id + 1;
+
+    req.body["_id"] = id;
+    req.body["sid"] = req.params.sid;
+    req.body["Status"] = "InProgress";
 
 
-  let model = new purchaseModel(req.body);
-  let vError = model.validateSync();
+    let model = new purchaseModel(req.body);
+    let vError = model.validateSync();
 
-  if(vError != null){
-      res.writeHead(400, "Invalid Data");
-      res.write(vError.message);
-      res.end();
-      return;
-  }
+    if(vError != null){
+        res.writeHead(400, "Invalid Data");
+        res.write(vError.message);
+        res.end();
+        return;
+    }
 
-  try{
-      await model.save();
-      res.writeHead(201, "Resource Created Successfully");
-      res.write(
-          JSON.stringify({ URL: `http://127.0.0.1/service/purchased/${id}` })
-      );
-      res.end();
-  }
-  catch(err){
-      error(err);
-  }
+    try{
+        await model.save();
+        res.writeHead(201, "Resource Created Successfully");
+        res.write(
+            JSON.stringify({ URL: `http://127.0.0.1/service/purchased/${id}` })
+        );
+        res.end();
+    }
+    catch(err){
+        error(err);
+    }
 });
 
 //Route to view a purchased service
@@ -467,19 +472,6 @@ router.put("/request/:id/reject", function (req, res, next) {
     });
 });
 //View Service Requests
-<<<<<<< HEAD
-router.get('/requests', function(req, res, next) {
-  requestModel.find({}).then((result) => {
-    res.writeHead(200,"Requests Retrieved!");
-    res.end();
-  })
-  .catch((error) => {
-    console.log(error);
-    res.writeHead(404, "No Request Found!");
-    res.write(error);
-    res.end();
-  });
-=======
 router.get("/requests", function (req, res, next) {
   requestModel
     .find({})
@@ -493,7 +485,6 @@ router.get("/requests", function (req, res, next) {
       res.write(error);
       res.end();
     });
->>>>>>> c62196da7305e257a3cf502eb6f75a4699695371
 });
 //View a Service Request
 router.get("/requests/:id", function (req, res, next) {
