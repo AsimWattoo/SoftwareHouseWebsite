@@ -411,7 +411,7 @@ router.get('/subscription/:id', function(req, res, next) {
     subscriptionModel.findOne({_id: req.params.id}).aggregate([
       {$project:{status:1}}
     ]).then((result) => {
-      res.writeHead(200,"Subscription Data Retired!");
+      res.writeHead(200,"Subscription Data Retrieved!");
       res.write(JSON.stringify(result));
       res.end();
     })
@@ -452,7 +452,6 @@ router.get('/requests', function(req, res, next) {
     res.end();
   })
   .catch((error) => {
-    console.log(error);
     res.writeHead(404, "No Request Found!");
     res.write(error);
     res.end();
