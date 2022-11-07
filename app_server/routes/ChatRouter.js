@@ -4,7 +4,11 @@ var router = express.Router();
 //Models 
 var userModel = require('../models/User');
 var roomModel = require('../models/Room');
+var conversationModel = require('../models/Conversation');
+let chatModel = require('../models/Chat');
+let messageModel = require('../models/Message');
 const { response } = require('express');
+const { populate } = require('../models/User');
 
 
 
@@ -80,7 +84,7 @@ router.get('/room/:id/members',async function(req, res, next) {
 
 //Join Chat Room
 router.put('/room/:rid/join/:id',async function(req, res, next) {
-    var room = await roomModel.findOneAndUpdate({ _id: req.params.rid }, { $push: {members_id:id} });
+    var room = await roomModel.findOneAndUpdate({ _id: req.params.rid }, { $push: {members_id:req.params.id} });
     if (room == null) {
         res.writeHead(404,"Chat Roon Not Joined");
         res.end();
@@ -110,37 +114,148 @@ router.put('/room/:rid/join/:id',async function(req, res, next) {
 
 //Send Chat Message
 router.post('/message/send/:sid/:rid',async function(req, res, next) {
-    var room = await messageModel.create({ _id: req.params.id }, { $push: {members_id:id} });
 
+    let chat = await chatModel.findOne({sid: req.params.sid, rid: req.params.rid});
+
+    //Create Message
+    let mid = 0;
+    let messages = await messageModel.find({}).sort({_id: -1});
+    
+    if(messages.length > 0)
+        mid = messages[0]._id + 1;
+
+    req.body["_id"] = mid;
+    req.body["sid"] = req.params.sid;
+    messageModel.create(req.body);
+
+
+    //If the chat is found then no need to create chart
+    if(chat == null){
+        chat = await chatModel.findOne({sid: req.params.rid, rid: req.params.sid});
+        //Create a new chat
+        if(chat == null){
+
+            //Creating a conversion
+            let cid = 0;
+            let conversations = await conversationModel.find({}).sort({_id: -1});
+            if(conversations.lenth > 0)
+                cid = conversations[0]._id + 1;
+
+            conversationModel.create({_id: cid, mid: [mid]});
+
+            //Creating a Chat
+            let chats = await chatModel.find({}).sort({_id: -1});
+            let chatId = 0;
+            if(chats.length > 0)
+                chatId = chats[0]._id + 1;
+            
+            chatModel.create({
+                _id: chatId,
+                cid: cid,
+                sid: req.params.sid,
+                rid: req.params.rid,
+            });
+
+            res.writeHead(200, "Message sent successfully");
+            res.end();
+            return;
+        }
+    }
+
+    await conversationModel.findOneAndUpdate({_id: chat.cid}, {$push: {mid: mid}});
+    res.writeHead(200, "Message sent successfully");
+    res.end();
 })
 
 //Send Chat Room Message
-router.post('/room/:id/message/',async function(req, res, next) {})
+router.post('/room/:id/message/',async function(req, res, next) {
 
-//View Chat Message
-router.get('/messages/:sid/:rid',async function(req, res, next) {})
+    let room = await roomModel.findOne({id: req.params.id});
 
-//View Chat Room Message
-router.get('/room/:cid/message',async function(req, res, next) {
-    var message_list = await roomModel.findOne({_id:req.params.cid}).populate("Conversation").aggregate([{$project:{c_id:1}}]);
-    if (message_list == null) {
-        res.writeHead(404,"Message Not Found");
+    //Create Message
+    let mid = 0;
+    let messages = await messageModel.find({}).sort({_id: -1});
+    
+    if(messages.length > 0)
+        mid = messages[0]._id + 1;
+
+    req.body["_id"] = mid;
+    
+    messageModel.create(req.body);
+
+    if (room == null) {
+        res.writeHead(404,"Chat Room Not Found");
         res.end();
     }
     else{
-        res.writeHead(200);
-        res.write(JSON.stringify(message_list));
+        await conversationModel.findOneAndUpdate({_id: room.id}, {$push: {mid: mid}});
+        res.writeHead(200, "Message sent successfully");
+        res.end();
+    }
+
+})
+
+//View Chat Message
+router.get('/messages/:sid/:rid',async function(req, res, next) {
+    var sid = req.params.sid;
+    var rid = req.params.rid;
+    var chat = await chatModel.findOne({sid: sid, rid: rid})
+    if (chat==null) {
+        chat = chatModel.findOne({sid: rid, rid: sid});
+        if (chat == null) {
+            res.writeHead(404,"No chat found!");
+            res.end();
+        }
+    }
+    var conversations = conversationModel.find({_id: chat.c_id});
+    conversationModel.find({_id: conversations});
+})
+
+//View Chat Room Message
+router.get('/room/:cid/message',async function(req, res, next) { 
+    var cid = req.params.cid;
+    
+    var room = await roomModel.findOne({cid: cid})
+    if (room==null) {
+        
+        res.writeHead(404,"No chat found!");
+        res.end();
+        
+    }
+    var conversations = conversationModel.find({_id: room.rid});
+    conversationModel.find({_id: conversations});
+})
+
+//Delete Chat Message
+router.delete('/messages/:sid/:rid/:mid',async function(req, res, next) {
+    let chat = await chatModel.findOne({sid: req.params.sid, rid: req.params.rid,mid: req.params.mid});
+
+    
+    if(chat == null){
+        res.writeHead(200, "Chat not found");
+        res.end();
+    }
+    else{
+        await conversationModel.findOneAndUpdate({_id: chat.cid}, {$pull: {mid: mid}});
+        res.writeHead(200, "Message deleted successfully");
+        res.end();
+    }
+
+})
+
+//Delete Chat Room Message
+router.delete('/room/:cid/message/:mid',async function(req, res, next) {
+    let room = await roomModel.findOne({cid: req.params.cid, mid: req.params.mid});
+
+    if (room == null) {
+        res.writeHead(404,"Chat Room Not Found");
+        res.end();
+    }
+    else{
+        await conversationModel.findOneAndUpdate({_id: room.id}, {$pull: {mid: mid}});
+        res.writeHead(200, "Message deleted successfully");
         res.end();
     }
 })
 
-//Delete Chat Message
-router.put('/messages/:sid/:rid/:mid',async function(req, res, next) {})
 
-//Delete Chat Room Message
-router.put('/room/:cid/message/:mid',async function(req, res, next) {})
-
-//Add Member
-router.put('/chat/room/:cid/addmember/:id',async function(req, res, next) {})
-
-module.exports = router;
