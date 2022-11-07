@@ -5,78 +5,84 @@ let serviceModel = require("../models/Service");
 let purchaseModel = require("../models/Purchase");
 let packageModel = require("../models/Packages");
 let PurchasepackageModel = require("../models/Purchasepackage");
-let adminModel = require('../models/Admin');
-let subscriptionModel = require('../models/Subscription');
-let userModel = require('../models/User');
-let requestModel = require('../models/Request');
+let adminModel = require("../models/Admin");
+let subscriptionModel = require("../models/Subscription");
+let userModel = require("../models/User");
+let requestModel = require("../models/Request");
 
 //Route to create the service
-router.post("/create", (req, res, next) => {
-  serviceModel
-    .find({})
-    .sort({ _id: -1 })
-    .then((records) => {
-      let id = 0;
-      if (records.length > 0) id = records[0]._id + 1;
+router.post("/create", async (req, res, next) => {
 
-      req.body["_id"] = id;
+    let records = await serviceModel.find({}).sort({_id: -1});
 
-      //Creating record in the database
-      serviceModel
-        .create(req.body)
-        .then((createResponse) => {
-          res.writeHead(201, "Service Created Successfully");
-          res.write(
-            JSON.stringify({ Location: `http://127.0.0.1:3000/service/${id}` })
-          );
-          res.end();
-        })
-        .catch((error) => {
-          res.writeHead(404, "Creation Failed");
-          res.write(error);
-          console.log(error);
-          res.end();
-        });
-    })
-    .catch((error) => {
-      res.writeHead(404, "Creation Failed");
-      res.write(error);
-      console.log(error);
-      res.end();
-    });
+    let id = 0;
+    if (records.length > 0) id = records[0]._id + 1;
+
+    req.body["_id"] = id;
+    let model = new serviceModel(req.body);
+
+    let error = model.validateSync();
+
+    if(error != null){
+        res.writeHead(400, "Failed");
+        res.write(error.message);
+        res.end();
+        return;
+    }
+
+    try{
+        //Creating record in the database
+        await serviceModel.create(req.body);
+        res.writeHead(200, "Creation Successfull");
+        res.write(JSON.stringify({"URL": `http://127.0.0.1:3000/services/${id}`}));
+        res.end();
+    }
+    catch(err){
+        console.log(err);
+        res.writeHead(400, "Creation Failed");
+        res.end();
+    }
 });
 
 //Route to edit the service
-router.put("/edit/:id", (req, res, next) => {
-  //Getting and modifying the service
-  serviceModel
-    .updateOne({ _id: req.params.id }, { $set: req.body })
-    .then((result) => {
-      res.writeHead(200, "Update Successful");
-      res.end();
-    })
-    .catch((error) => {
-      console.log(error);
-      res.writeHead(400);
-      res.write(error);
-      res.end();
-    });
+router.put("/edit/:id", async (req, res, next) => {
+    //Getting and modifying the service
+
+    req.body["_id"] = req.params.id;
+
+    let model = new serviceModel(req.body);
+    let error = model.validateSync();
+    if(error != nul){
+        res.writeHead(400, "Invalid Service Data");
+        res.write(error.message);
+        res.end();
+        return;
+    }
+
+    try{
+        await serviceModel.updateOne({ _id: req.params.id }, { $set: req.body })
+        res.writeHead(200, "Update Successful");
+        res.end();
+    }catch(err){
+        res.writeHead(400, "Update Failed");
+        res.write(err);
+        res.end();
+    }
 });
 
 //Route to delete an existing service
-router.delete("/delete/:id", (req, res, next) => {
-  serviceModel
-    .deleteOne({ _id: req.params.id })
-    .then((result) => {
-      res.writeHead(200, "Deleted Successfully");
-      res.end();
-    })
-    .catch((error) => {
-      console.log(error);
-      res.writeHead(404, "Delete Unsuccessful");
-      res.write(error);
-      res.end();
-    });
+router.delete("/delete/:id", async (req, res, next) => {
+
+    try{
+        await serviceModel.deleteOne({_id: req.params.id});
+        res.writeHead(200, "Deleted Successfully");
+        res.end();
+    }catch(err){
+        res.writeHead(404, "Service Delete failed");
+        res.write(err);
+        res.end();
+    }
+
 });
 
 // Route to view a specific service
@@ -97,55 +103,68 @@ router.get("/:id", (req, res) => {
 });
 
 //Route to view all the services
-router.get("/", (req, res) => {
-  serviceModel
-    .find({})
-    .then((result) => {
-      res.writeHead(200);
-      res.write(JSON.stringify(result));
-      res.end();
-    })
-    .catch((error) => {
-      console.log(error);
-      res.writeHead(404, "Not Found");
-      res.write(error);
-      res.end();
-    });
+router.get("/", async (req, res) => {
+    let records = await serviceModel.find({});
+    if(records){
+        res.writeHead(200);
+        res.write(JSON.stringify(records));
+        res.end();
+    }
+    else{
+        res.writeHead(404, "Could not retrieve records");
+        res.end();
+    }
 });
 
 //Route to purchase a service
 router.post("/:sid/buy", async (req, res) => {
-  let service = await serviceModel.findOne({ _id: req.params.sid });
-  let error = (message) => {
-    res.writeHead(404, message);
-    res.end();
-  };
 
-  if (service == null) {
-    error("Service not found");
-    return;
-  }
+    let user = await userModel.findOne({_id: req.body.uid});
 
-  let purchases = await purchaseModel.find({}).sort({ _id: -1 });
-  let id = 0;
+    if(user == null){
+        res.writeHead(400, "User not found");
+        res.end();
+        return;
+    }
 
-  if (purchases.length > 0) id = purchases[0]._id + 1;
+    let service = await serviceModel.findOne({ _id: req.params.sid });
+    let error = (message) => {res.writeHead(404, message);res.end();
+    };
 
-  req.body["_id"] = id;
-  req.body["sid"] = req.params.sid;
-  req.body["Status"] = "InProgress";
-  purchaseModel
-    .create(req.body)
-    .then((result) => {
-      res.writeHead(201, "Resource Created Successfully");
-      res.write(
-        JSON.stringify({ URL: `http://127.0.0.1/service/purchased/${id}` })
-      );
-      res.end();
-    })
-    .catch((err) => {
-      error(err);
-    });
+    if (service == null) {error("Service not found");return;
+    }
+
+    let purchases = await purchaseModel.find({}).sort({ _id: -1 });
+    let id = 0;
+
+    if (purchases.length > 0) id = purchases[0]._id + 1;
+
+    req.body["_id"] = id;
+    req.body["sid"] = req.params.sid;
+    req.body["Status"] = "InProgress";
+
+
+    let model = new purchaseModel(req.body);
+    let vError = model.validateSync();
+
+    if(vError != null){
+        res.writeHead(400, "Invalid Data");
+        res.write(vError.message);
+        res.end();
+        return;
+    }
+
+    try{
+        await model.save();
+        res.writeHead(201, "Resource Created Successfully");
+        res.write(
+            JSON.stringify({ URL: `http://127.0.0.1/service/purchased/${id}` })
+        );
+        res.end();
+    }
+    catch(err){
+        error(err);
+    }
 });
 
 //Route to view a purchased service
@@ -166,7 +185,7 @@ router.get("/purchased/:id", (req, res) => {
 });
 
 //Route to view purchased services for a user
-router.get("/user/:uid", (req, res) => {
+router.get("/user/purchases/:uid", (req, res) => {
   purchaseModel
     .find({ uid: req.params.uid })
     .then((result) => {
@@ -197,6 +216,8 @@ router.put("/purchased/cancel/:id", (req, res) => {
       res.end();
     });
 });
+
+//Bazil/
 
 //Route to create Package
 
@@ -393,18 +414,21 @@ router.get("/sale/:sid", (req, res) => {
 /* HAZIQ */
 
 //View Package Subscription
-router.get('/package/:id/subscriptions', function(req, res, next) {
+router.get("/package/:id/subscriptions", function (req, res, next) {
   let id = req.params.id;
-  subscriptionModel.find({p_id: id}).populate("Packages").then((result) => {
-    res.writeHead(200,"Subscriptions Found!");
-    res.write(JSON.stringify(result));
-    res.end();
-  })
-  .catch((error) => {
-    res.writeHead(404, "Not Subscription Found!");
-    res.write(error);
-    res.end();
-  });
+  subscriptionModel
+    .find({ p_id: id })
+    .populate("Packages")
+    .then((result) => {
+      res.writeHead(200, "Subscriptions Found!");
+      res.write(JSON.stringify(result));
+      res.end();
+    })
+    .catch((error) => {
+      res.writeHead(404, "Not Subscription Found!");
+      res.write(error);
+      res.end();
+    });
 });
 //View Subscription Status
 router.get('/subscription/:id', function(req, res, next) {
@@ -422,28 +446,32 @@ router.get('/subscription/:id', function(req, res, next) {
     });
 });
 //Accept Service Request
-router.put('/request/:id/accept', function(req, res, next) {
-  requestModel.findOneAndUpdate({_id: req.params.id}, { $set:{status:"Accepted"}}).then((result) => {
-    res.writeHead(200,"Request Approved!");
-    res.end();
-  })
-  .catch((error) => {
-    res.writeHead(404, "Status Update Failed");
-    res.write(error);
-    res.end();
-  });
+router.put("/request/:id/accept", function (req, res, next) {
+  requestModel
+    .findOneAndUpdate({ _id: req.params.id }, { $set: { status: "Accepted" } })
+    .then((result) => {
+      res.writeHead(200, "Request Approved!");
+      res.end();
+    })
+    .catch((error) => {
+      res.writeHead(404, "Status Update Failed");
+      res.write(error);
+      res.end();
+    });
 });
 //Reject Service Request
-router.put('/request/:id/reject', function(req, res, next) {
-  requestModel.findOneAndUpdate({_id: req.params.id}, { $set:{status:"Rejected"}}).then((result) => {
-    res.writeHead(200,"Request Rejected!");
-    res.end();
-  })
-  .catch((error) => {
-    res.writeHead(404, "Status Update Failed");
-    res.write(error);
-    res.end();
-  });
+router.put("/request/:id/reject", function (req, res, next) {
+  requestModel
+    .findOneAndUpdate({ _id: req.params.id }, { $set: { status: "Rejected" } })
+    .then((result) => {
+      res.writeHead(200, "Request Rejected!");
+      res.end();
+    })
+    .catch((error) => {
+      res.writeHead(404, "Status Update Failed");
+      res.write(error);
+      res.end();
+    });
 });
 //View Service Requests 
 router.get('/requests', function(req, res, next) {
@@ -459,39 +487,47 @@ router.get('/requests', function(req, res, next) {
   });
 });
 //View a Service Request
-router.get('/requests/:id', function(req, res, next) {
-  requestModel.findOne({_id:req.params.id}).then((result) => {
-    res.writeHead(200,"Request Found!");
-    res.end();
-  }).catch((error) => {
-    res.writeHead(404, "No Request Found!");
-    res.write(error);
-    res.end();
-  });
+router.get("/requests/:id", function (req, res, next) {
+  requestModel
+    .findOne({ _id: req.params.id })
+    .then((result) => {
+      res.writeHead(200, "Request Found!");
+      res.end();
+    })
+    .catch((error) => {
+      res.writeHead(404, "No Request Found!");
+      res.write(error);
+      res.end();
+    });
 });
 //Add a User
-router.post('/user/add', async function(req, res, next) {
-  var userList = await userModel.find({}).sort({_id:-1});
-    let id= 0;
-    if (userList.length>0){
-        id = userList[0]._id+1;
-    }
-    req.body["_id"]=id;
-    userModel.create(req.body).then((result)=>{
-        res.writeHead(200,"User Added successfully!");
-        res.write("New User has been created!");
-        res.end();
-    }).catch((err)=>{
-        res.writeHead(404,"User Addition Failed!");
-        console.log(err);
-        res.end();
+router.post("/user/add", async function (req, res, next) {
+  var userList = await userModel.find({}).sort({ _id: -1 });
+  let id = 0;
+  if (userList.length > 0) {
+    id = userList[0]._id + 1;
+  }
+  req.body["_id"] = id;
+  userModel
+    .create(req.body)
+    .then((result) => {
+      res.writeHead(200, "User Added successfully!");
+      res.write("New User has been created!");
+      res.end();
+    })
+    .catch((err) => {
+      res.writeHead(404, "User Addition Failed!");
+      console.log(err);
+      res.end();
     });
 });
 //Remove a User
-router.delete('/user/remove/:id', function(req, res, next) {
+router.delete("/user/remove/:id", function (req, res, next) {
   let id = req.params.id;
-  userModel.deleteOne({_id:id}).then((result)=>{
-      res.writeHead(200,"User Deleted Successfully");
+  userModel
+    .deleteOne({ _id: id })
+    .then((result) => {
+      res.writeHead(200, "User Deleted Successfully");
       res.end();
   }).catch((err)=>{
       res.writeHead(404,"User Deletion Failed!");
@@ -499,33 +535,39 @@ router.delete('/user/remove/:id', function(req, res, next) {
   });
 });
 //Add an Admin
-router.post('/admin/add', async function(req, res, next) {
-  var adminList = await adminModel.find({}).sort({_id:-1});
-    let id= 0;
-    if (adminList.length>0){
-        id = adminList[0]._id+1;
-    }
-    req.body["_id"]=id;
-    adminModel.create(req.body).then((result)=>{
-        res.writeHead(200,"Admin Added successfully!");
-        res.write("New Admin has been created!");
-        res.end();
-    }).catch((err)=>{
-        res.writeHead(404,"Admin Addition Failed!");
-        console.log(err);
-        res.end();
+router.post("/admin/add", async function (req, res, next) {
+  var adminList = await adminModel.find({}).sort({ _id: -1 });
+  let id = 0;
+  if (adminList.length > 0) {
+    id = adminList[0]._id + 1;
+  }
+  req.body["_id"] = id;
+  adminModel
+    .create(req.body)
+    .then((result) => {
+      res.writeHead(200, "Admin Added successfully!");
+      res.write("New Admin has been created!");
+      res.end();
+    })
+    .catch((err) => {
+      res.writeHead(404, "Admin Addition Failed!");
+      console.log(err);
+      res.end();
     });
 });
 //Remove an Admin
-router.delete('/admin/remove/:id', async function(req, res, next) {
+router.delete("/admin/remove/:id", async function (req, res, next) {
   let id = req.params.id;
-  adminModel.deleteOne({_id:id}).then((result)=>{
-      res.writeHead(200,"Admin Deleted Successfully");
+  adminModel
+    .deleteOne({ _id: id })
+    .then((result) => {
+      res.writeHead(200, "Admin Deleted Successfully");
       res.end();
-  }).catch((err)=>{
-      res.writeHead(404,"Admin Deletion Failed!");
+    })
+    .catch((err) => {
+      res.writeHead(404, "Admin Deletion Failed!");
       res.end();
-  });
+    });
 });
 
 module.exports = router;
