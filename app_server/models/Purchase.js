@@ -8,7 +8,7 @@ let purchaseSchema = new Schema({
     Days: {type: Number, required: [true, "Number of days for which the service is purchased must not be empty"]},
     Description: String,
     Price: {type: Number, required: [true, "Price for a purchase is required"]},
-    Status: {type: String, enum: ["InProgress", "Cancelled", "Completed"]}
+    Status: {type: String, enum: ["InProgress", "Accepted", "Rejected", "Cancelled", "Completed"]}
 });
 
 

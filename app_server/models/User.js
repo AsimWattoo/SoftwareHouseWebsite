@@ -17,7 +17,7 @@ let UserSchema = new Schema({
         type: String,
         validate: {
             validator: v => {
-                return /^[a-zA-Z0-9]@[0-9a-zA-Z].[a-zA-Z0-9]$/
+                return /^[a-zA-Z0-9]@[0-9a-zA-Z].[a-zA-Z0-9]$/.test(v);
             }
         },
         message: "{VALUE} is not a valid email address",
