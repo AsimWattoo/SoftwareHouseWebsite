@@ -85,26 +85,9 @@ router.delete("/delete/:id", async (req, res, next) => {
 
 });
 
-// Route to view a specific service
-router.get("/:id", (req, res) => {
-  serviceModel
-    .findOne({ _id: req.params.id })
-    .then((result) => {
-      res.writeHead(200);
-      res.write(JSON.stringify(result));
-      res.end();
-    })
-    .catch((error) => {
-      console.log(error);
-      res.writeHead(404, "Not Found");
-      res.write(error);
-      res.end();
-    });
-});
-
 //Route to view all the services
 router.get("/", async (req, res) => {
-    let records = await serviceModel.find({});
+    let records = await serviceModel.find({}); 
     if(records){
         res.writeHead(200);
         res.write(JSON.stringify(records));
@@ -426,22 +409,20 @@ router.get("/package/:id/subscriptions", function (req, res, next) {
     })
     .catch((error) => {
       res.writeHead(404, "Not Subscription Found!");
-      res.write(error);
+      res.write(JSON.stringify(error));
       res.end();
     });
 });
 //View Subscription Status
 router.get('/subscription/:id', function(req, res, next) {
-    subscriptionModel.findOne({_id: req.params.id}).aggregate([
-      {$project:{status:1}}
-    ]).then((result) => {
-      res.writeHead(200,"Subscription Data Retired!");
+    subscriptionModel.findOne({_id: req.params.id}, {_id: 0, status: 1}).then((result) => {
+      res.writeHead(200,"Subscription Data Retrieved!");
       res.write(JSON.stringify(result));
       res.end();
     })
     .catch((error) => {
       res.writeHead(404, "Failed to retrieve subscription data!");
-      res.write(error);
+      res.write(JSON.stringify(error));
       res.end();
     });
 });
@@ -455,7 +436,7 @@ router.put("/request/:id/accept", function (req, res, next) {
     })
     .catch((error) => {
       res.writeHead(404, "Status Update Failed");
-      res.write(error);
+      res.write(JSON.stringify(error));
       res.end();
     });
 });
@@ -469,12 +450,13 @@ router.put("/request/:id/reject", function (req, res, next) {
     })
     .catch((error) => {
       res.writeHead(404, "Status Update Failed");
-      res.write(error);
+      res.write(JSON.stringify(error));
       res.end();
     });
 });
-//View Service Requests 
+// //View Service Requests 
 router.get('/requests', function(req, res, next) {
+  console.log('Request Received');
   requestModel.find({}).then((result) => {
     res.writeHead(200,"Requests Retrieved!");
     res.end();
@@ -482,7 +464,7 @@ router.get('/requests', function(req, res, next) {
   .catch((error) => {
     console.log(error);
     res.writeHead(404, "No Request Found!");
-    res.write(error);
+    res.write(JSON.stringify(error));
     res.end();
   });
 });
@@ -496,7 +478,7 @@ router.get("/requests/:id", function (req, res, next) {
     })
     .catch((error) => {
       res.writeHead(404, "No Request Found!");
-      res.write(error);
+      res.write(JSON.stringify(error));
       res.end();
     });
 });
@@ -566,6 +548,23 @@ router.delete("/admin/remove/:id", async function (req, res, next) {
     })
     .catch((err) => {
       res.writeHead(404, "Admin Deletion Failed!");
+      res.end();
+    });
+});
+
+// Route to view a specific service
+router.get("/:id", (req, res) => {
+  serviceModel
+    .findOne({ _id: req.params.id })
+    .then((result) => {
+      res.writeHead(200);
+      res.write(JSON.stringify(result));
+      res.end();
+    })
+    .catch((error) => {
+      console.log(error);
+      res.writeHead(404, "Not Found");
+      res.write(error);
       res.end();
     });
 });
