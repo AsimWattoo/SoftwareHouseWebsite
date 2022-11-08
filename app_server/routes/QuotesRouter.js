@@ -3,6 +3,7 @@ let router = express.Router();
 
 let requestModel = require("../models/QuoteRequest");
 let quoteModel = require("../models/Quote");
+let adminModel = require('../models/Admin');
 const {request} = require("express");
 
 //Route to create a quote request
@@ -110,6 +111,14 @@ router.post("/send/:rid", async (req, res) => {
 
     if(request == null){
         res.writeHead(404, "Quote Request not found");
+        res.end();
+        return;
+    }
+
+    let admin = await adminModel.findOne({_id: req.body["aid"]});
+
+    if(admin == null){
+        res.writeHead(404, "Specified admin does not exists");
         res.end();
         return;
     }

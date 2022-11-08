@@ -6,8 +6,6 @@ var MessageSchema = new Schema({
     sid: {type: Number, ref:'User'},
     message:{type: String},
     CreationDate:{type: Date},
-      
-    
 });
 
 module.exports = mongoose.model('Message', MessageSchema);              

@@ -3,11 +3,9 @@ var Schema = mongoose.Schema;
 
 var ChatSchema = new Schema({
     _id :{type: Number},
-    id:[{type: Number, ref:'message'}],
-    sid:[{type: Number, ref:'message'}],
-    rid:[{type: Number, ref:'message'}]
-    
-        
+    cid:{type: Number, ref:'Conversation'},
+    sid:{type: Number, ref:'User'},
+    rid:{type: Number, ref:'User'}
 });
 
-module.exports = mongoose.model('Conversation', ChatSchema);
+module.exports = mongoose.model('Chat', ChatSchema);
