@@ -257,5 +257,5 @@ router.delete('/room/:cid/message/:mid',async function(req, res, next) {
         res.end();
     }
 })
-
+module.exports = router;
 
