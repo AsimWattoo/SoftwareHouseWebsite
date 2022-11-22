@@ -1,16 +1,11 @@
 var express = require('express');
 var router = express.Router();
 
-//Models 
-var userModel = require('../models/User');
+//Models
 var roomModel = require('../models/Room');
 var conversationModel = require('../models/Conversation');
 let chatModel = require('../models/Chat');
 let messageModel = require('../models/Message');
-const { response } = require('express');
-const { populate } = require('../models/User');
-
-
 
 //Create a chatroom
 router.post('/room', async function(req, res, next) {
@@ -91,7 +86,7 @@ router.put('/room/:rid/join/:id',async function(req, res, next) {
     }
     else{
         res.writeHead(200, "Chat Room Joined");
-    
+
         res.end();
     }
 
@@ -106,7 +101,7 @@ router.put('/room/:rid/join/:id',async function(req, res, next) {
     }
     else{
         res.writeHead(200, "Chat Room Not Leaved");
-    
+
         res.end();
     }
 
@@ -120,7 +115,7 @@ router.post('/message/send/:sid/:rid',async function(req, res, next) {
     //Create Message
     let mid = 0;
     let messages = await messageModel.find({}).sort({_id: -1});
-    
+
     if(messages.length > 0)
         mid = messages[0]._id + 1;
 
@@ -148,7 +143,7 @@ router.post('/message/send/:sid/:rid',async function(req, res, next) {
             let chatId = 0;
             if(chats.length > 0)
                 chatId = chats[0]._id + 1;
-            
+
             chatModel.create({
                 _id: chatId,
                 cid: cid,
@@ -175,12 +170,12 @@ router.post('/room/:id/message/',async function(req, res, next) {
     //Create Message
     let mid = 0;
     let messages = await messageModel.find({}).sort({_id: -1});
-    
+
     if(messages.length > 0)
         mid = messages[0]._id + 1;
 
     req.body["_id"] = mid;
-    
+
     messageModel.create(req.body);
 
     if (room == null) {
@@ -201,36 +196,51 @@ router.get('/messages/:sid/:rid',async function(req, res, next) {
     var rid = req.params.rid;
     var chat = await chatModel.findOne({sid: sid, rid: rid})
     if (chat==null) {
-        chat = chatModel.findOne({sid: rid, rid: sid});
+        chat = await chatModel.findOne({sid: rid, rid: sid});
         if (chat == null) {
             res.writeHead(404,"No chat found!");
             res.end();
+            return;
         }
     }
-    var conversations = conversationModel.find({_id: chat.c_id});
-    conversationModel.find({_id: conversations});
+    let conversations = await conversationModel.find({_id: chat.cid});
+    if(conversations == null){
+        res.writeHead(404, "Conversations not found");
+    }
+    else{
+        res.writeHead(200);
+        res.write(JSON.stringify(conversations));
+    }
+    res.end();
 })
 
-//View Chat Room Message
-router.get('/room/:cid/message',async function(req, res, next) { 
-    var cid = req.params.cid;
-    
-    var room = await roomModel.findOne({cid: cid})
+//View Chat Room Messages
+router.get('/room/:rid/messages',async function(req, res, next) {
+
+    let room = await roomModel.findOne({_id: req.params.rid})
     if (room==null) {
-        
-        res.writeHead(404,"No chat found!");
+
+        res.writeHead(404,"Room not found!");
         res.end();
-        
+
     }
-    var conversations = conversationModel.find({_id: room.rid});
-    conversationModel.find({_id: conversations});
+    let conversations = await conversationModel.find({_id: room.c_id}).populate("mid");
+    if(conversations == null){
+        res.writeHead(404, "Conversation not found");
+    }
+    else
+    {
+        res.writeHead(200);
+        res.write(JSON.stringify(conversations));
+    }
+    res.end();
 })
 
 //Delete Chat Message
 router.delete('/messages/:sid/:rid/:mid',async function(req, res, next) {
     let chat = await chatModel.findOne({sid: req.params.sid, rid: req.params.rid,mid: req.params.mid});
 
-    
+
     if(chat == null){
         res.writeHead(200, "Chat not found");
         res.end();
@@ -259,3 +269,4 @@ router.delete('/room/:cid/message/:mid',async function(req, res, next) {
 })
 
 
+module.exports = router;

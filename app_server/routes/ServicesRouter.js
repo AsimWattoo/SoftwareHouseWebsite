@@ -216,7 +216,7 @@ router.post("/package", (req, res, next) => {
         .then((createResponse) => {
           res.writeHead(201, "Service Created Successfully");
           res.write(
-            JSON.stringify({ Location: `http://127.0.0.1:3000/service/${id}` })
+            JSON.stringify({ Location: `http://127.0.0.1:3000/services/package/${id}` })
           );
           res.end();
         })
@@ -499,7 +499,7 @@ router.post("/user/add", async function (req, res, next) {
     })
     .catch((err) => {
       res.writeHead(404, "User Addition Failed!");
-      console.log(err);
+      res.write(JSON.stringify(err))
       res.end();
     });
 });
@@ -555,11 +555,18 @@ router.delete("/admin/remove/:id", async function (req, res, next) {
 
 // Route to view a specific service
 router.get("/:id", (req, res) => {
+
   serviceModel
     .findOne({ _id: req.params.id })
     .then((result) => {
-      res.writeHead(200);
-      res.write(JSON.stringify(result));
+      if(result == null){
+       res.writeHead(404);
+       res.write("Service Not Found");
+      }
+      else{
+        res.writeHead(200);
+        res.write(JSON.stringify(result));
+      }
       res.end();
     })
     .catch((error) => {
