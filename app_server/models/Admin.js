@@ -8,7 +8,7 @@ let AdminSchema = new Schema({
         required: [true, "Admin name is required"],
         validate: {
             validator: v => {
-                return /^[a-zA-Z0-9 ]$/.test(v);
+                return /^[a-zA-Z0-9 ]{2,}$/.test(v);
             }
         },
         message: "{VALUE} is not valid for an admin name"
@@ -18,7 +18,7 @@ let AdminSchema = new Schema({
         required: [true, "Email for an admin is required"],
         validate: {
             validator: v => {
-                return /^[a-zA-Z0-9]@[0-9a-zA-Z].[a-zA-Z0-9]$/.test(v);
+                return /^[a-zA-Z0-9]+@[0-9a-zA-Z]+.[a-zA-Z0-9]+$/.test(v);
             }
         },
         message: "{VALUE} is not valid for an email"
